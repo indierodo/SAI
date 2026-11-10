@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.LayoutInflater;
@@ -202,7 +203,10 @@ public class InstallerXDialogFragment extends BaseBottomSheetDialogFragment impl
 
     private void pickFilesWithSaf(boolean ignorePermissions) {
         if (Utils.apiIsAtLeast(30) && !ignorePermissions) {
-            if (requireContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            boolean hasStorageAccess = Utils.apiIsAtLeast(Build.VERSION_CODES.R)
+                    ? Environment.isExternalStorageManager()
+                    : requireContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+            if (!hasStorageAccess) {
                 SimpleAlertDialogFragment.newInstance(requireContext(), R.string.warning, R.string.installerx_thank_you_scoped_storage_very_cool).show(getChildFragmentManager(), DIALOG_TAG_Q_SAF_WARNING);
                 return;
             }

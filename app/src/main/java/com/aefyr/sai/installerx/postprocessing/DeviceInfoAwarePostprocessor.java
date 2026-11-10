@@ -17,6 +17,7 @@ import com.aefyr.sai.installerx.splitmeta.config.AbiConfigSplitMeta;
 import com.aefyr.sai.installerx.splitmeta.config.ConfigSplitMeta;
 import com.aefyr.sai.installerx.splitmeta.config.LocaleConfigSplitMeta;
 import com.aefyr.sai.installerx.splitmeta.config.ScreenDestinyConfigSplitMeta;
+import com.aefyr.sai.utils.PreferencesHelper;
 import com.aefyr.sai.utils.TriConsumer;
 import com.aefyr.sai.utils.Utils;
 
@@ -96,10 +97,7 @@ public class DeviceInfoAwarePostprocessor implements Postprocessor {
         }
 
         if (bestMatchingPart != null) {
-            if (module.equals(NO_MODULE))
-                bestMatchingPart.setRequired(true);
-            else
-                bestMatchingPart.setRecommended(true);
+            markBestMatchingConfiguration(bestMatchingPart, module);
         } else {
             if (module.equals(NO_MODULE))
                 parserContext.addNotice(new Notice(NOTICE_TYPE_NO_MATCHING_LIBS, null, mContext.getString(R.string.installerx_notice_no_code_for_base)));
@@ -145,10 +143,7 @@ public class DeviceInfoAwarePostprocessor implements Postprocessor {
         }
 
         if (bestMatchingPart != null) {
-            if (module.equals(NO_MODULE))
-                bestMatchingPart.setRequired(true);
-            else
-                bestMatchingPart.setRecommended(true);
+            markBestMatchingConfiguration(bestMatchingPart, module);
         } else {
             if (module.equals(NO_MODULE))
                 parserContext.addNotice(new Notice(NOTICE_TYPE_NO_MATCHING_LOCALES, null, mContext.getString(R.string.installerx_notice_no_locale_for_base)));
@@ -199,11 +194,15 @@ public class DeviceInfoAwarePostprocessor implements Postprocessor {
         }
 
         if (bestPart != null) {
-            if (module.equals(NO_MODULE))
-                bestPart.setRequired(true);
-            else
-                bestPart.setRecommended(true);
+            markBestMatchingConfiguration(bestPart, module);
         }
+    }
+
+    private void markBestMatchingConfiguration(MutableSplitPart part, String module) {
+        if (module.equals(NO_MODULE) && !PreferencesHelper.getInstance(mContext).isDefaultConfigurationOverrideAllowed())
+            part.setRequired(true);
+        else
+            part.setRecommended(true);
     }
 
     private void processUnknownCategory(ParserContext parserContext, @Nullable MutableSplitCategory unknownCategory) {

@@ -56,6 +56,13 @@
             android:summary="@string/settings_main_use_installerx_summary"
             android:defaultValue="true" />
 
+        <SwitchPreference
+            android:icon="@drawable/ic_pref_pro_mode"
+            android:key="allow_default_configuration_override"
+            android:title="@string/settings_main_allow_default_configuration_override"
+            android:summary="@string/settings_main_allow_default_configuration_override_summary"
+            android:defaultValue="false" />
+
         <Preference
             android:icon="@drawable/ic_pref_root"
             android:key="installer"

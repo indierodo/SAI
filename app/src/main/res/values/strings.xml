@@ -294,6 +294,8 @@
     <string name="installerx_dialog_warn_no_files">Got empty result from the parser</string>
     <string name="installerx_dialog_warn_parsing_fail">SAI was unable to parse selected file. Do you want to try to install it anyway, without customization?</string>
     <string name="installerx_select_splits_hint">You can select what split APK parts to install, best matching parts were selected automatically</string>
+    <string name="settings_main_allow_default_configuration_override">Allow overriding default configurations</string>
+    <string name="settings_main_allow_default_configuration_override_summary">Lets you deselect automatically selected architecture, language, and display-density splits. Choosing incompatible splits can prevent an app from working.</string>
     <string name="installerx_category_base_apk">Base APK</string>
     <string name="installerx_category_dynamic_features">Dynamic features</string>
     <string name="installerx_dynamic_feature">Feature \"%s\"</string>

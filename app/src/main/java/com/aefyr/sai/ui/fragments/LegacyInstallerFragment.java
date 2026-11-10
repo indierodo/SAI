@@ -3,10 +3,8 @@ package com.aefyr.sai.ui.fragments;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -21,21 +19,14 @@ import com.aefyr.sai.ui.activities.MainActivity;
 import com.aefyr.sai.ui.activities.PreferencesActivity;
 import com.aefyr.sai.ui.dialogs.AppInstalledDialogFragment;
 import com.aefyr.sai.ui.dialogs.ErrorLogDialogFragment;
-import com.aefyr.sai.ui.dialogs.FilePickerDialogFragment;
 import com.aefyr.sai.ui.dialogs.InstallationConfirmationDialogFragment;
 import com.aefyr.sai.ui.dialogs.ThemeSelectionDialogFragment;
 import com.aefyr.sai.utils.AlertsUtils;
-import com.aefyr.sai.utils.PermissionsUtils;
-import com.aefyr.sai.utils.PreferencesHelper;
 import com.aefyr.sai.viewmodels.LegacyInstallerViewModel;
-import com.github.angads25.filepicker.model.DialogConfigs;
-import com.github.angads25.filepicker.model.DialogProperties;
-
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LegacyInstallerFragment extends InstallerFragment implements FilePickerDialogFragment.OnFilesSelectedListener, InstallationConfirmationDialogFragment.ConfirmationListener {
+public class LegacyInstallerFragment extends InstallerFragment implements InstallationConfirmationDialogFragment.ConfirmationListener {
 
     private static final int REQUEST_CODE_GET_FILES = 337;
 
@@ -43,15 +34,11 @@ public class LegacyInstallerFragment extends InstallerFragment implements FilePi
     private Button mButton;
     private ImageButton mButtonSettings;
 
-    private PreferencesHelper mHelper;
-
     private Uri mPendingActionViewUri;
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        mHelper = PreferencesHelper.getInstance(getContext());
 
         mButton = findViewById(R.id.button_install);
         mButtonSettings = findViewById(R.id.ib_settings);
@@ -89,8 +76,7 @@ public class LegacyInstallerFragment extends InstallerFragment implements FilePi
         findViewById(R.id.ib_toggle_theme).setOnClickListener((v -> ThemeSelectionDialogFragment.newInstance(requireContext()).show(getChildFragmentManager(), "theme_selection_dialog")));
         mButtonSettings.setOnClickListener((v) -> PreferencesActivity.open(requireContext(), PreferencesFragment.class, getString(R.string.settings_title)));
 
-        mButton.setOnClickListener((v) -> checkPermissionsAndPickFiles());
-        mButton.setOnLongClickListener((v) -> pickFilesWithSaf());
+        mButton.setOnClickListener((v) -> pickFilesWithSaf());
         findViewById(R.id.button_help).setOnClickListener((v) -> AlertsUtils.showAlert(this, R.string.help, R.string.installer_help));
 
         if (mPendingActionViewUri != null) {
@@ -112,22 +98,6 @@ public class LegacyInstallerFragment extends InstallerFragment implements FilePi
         InstallationConfirmationDialogFragment.newInstance(uri).show(getChildFragmentManager(), "installation_confirmation_dialog");
     }
 
-    private void checkPermissionsAndPickFiles() {
-        if (!PermissionsUtils.checkAndRequestStoragePermissions(this))
-            return;
-
-        DialogProperties properties = new DialogProperties();
-        properties.selection_mode = DialogConfigs.MULTI_MODE;
-        properties.selection_type = DialogConfigs.FILE_SELECT;
-        properties.root = Environment.getExternalStorageDirectory();
-        properties.offset = new File(mHelper.getHomeDirectory());
-        properties.extensions = new String[]{"apk", "zip", "apks"};
-        properties.sortBy = mHelper.getFilePickerSortBy();
-        properties.sortOrder = mHelper.getFilePickerSortOrder();
-
-        FilePickerDialogFragment.newInstance(null, getString(R.string.installer_pick_apks), properties).show(getChildFragmentManager(), "dialog_files_picker");
-    }
-
     private boolean pickFilesWithSaf() {
         Intent getContentIntent = new Intent(Intent.ACTION_GET_CONTENT);
         getContentIntent.setType("*/*");
@@ -135,19 +105,6 @@ public class LegacyInstallerFragment extends InstallerFragment implements FilePi
         startActivityForResult(Intent.createChooser(getContentIntent, getString(R.string.installer_pick_apks)), REQUEST_CODE_GET_FILES);
 
         return true;
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == PermissionsUtils.REQUEST_CODE_STORAGE_PERMISSIONS) {
-            if (grantResults.length == 0 || grantResults[0] == PackageManager.PERMISSION_DENIED)
-                AlertsUtils.showAlert(this, R.string.error, R.string.permissions_required_storage);
-            else
-                checkPermissionsAndPickFiles();
-        }
-
     }
 
     @Override
@@ -187,23 +144,6 @@ public class LegacyInstallerFragment extends InstallerFragment implements FilePi
                 .alpha(enabled ? 1f : 0.4f)
                 .setDuration(300)
                 .start();
-    }
-
-    @Override
-    public void onFilesSelected(String tag, List<File> files) {
-        if (files.size() == 1 && (files.get(0).getName().endsWith(".zip") || files.get(0).getName().endsWith(".apks"))) {
-            mViewModel.installPackagesFromZip(files.get(0));
-            return;
-        }
-
-        for (File f : files) {
-            if (!f.getName().endsWith(".apk")) {
-                AlertsUtils.showAlert(this, R.string.error, R.string.installer_error_mixed_extensions);
-                return;
-            }
-        }
-
-        mViewModel.installPackages(files);
     }
 
     @Override

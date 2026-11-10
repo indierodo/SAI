@@ -2,11 +2,9 @@ package com.aefyr.sai.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Environment;
 
 import androidx.preference.PreferenceManager;
 
-import com.github.angads25.filepicker.model.DialogConfigs;
 
 public class PreferencesHelper {
     private static PreferencesHelper sInstance;
@@ -24,38 +22,6 @@ public class PreferencesHelper {
 
     public SharedPreferences getPrefs() {
         return mPrefs;
-    }
-
-    public String getHomeDirectory() {
-        return mPrefs.getString(PreferencesKeys.HOME_DIRECTORY, Environment.getExternalStorageDirectory().getAbsolutePath());
-    }
-
-    public void setHomeDirectory(String homeDirectory) {
-        mPrefs.edit().putString(PreferencesKeys.HOME_DIRECTORY, homeDirectory).apply();
-    }
-
-    public int getFilePickerRawSort() {
-        return mPrefs.getInt(PreferencesKeys.FILE_PICKER_SORT_RAW, 0);
-    }
-
-    public void setFilePickerRawSort(int rawSort) {
-        mPrefs.edit().putInt(PreferencesKeys.FILE_PICKER_SORT_RAW, rawSort).apply();
-    }
-
-    public int getFilePickerSortBy() {
-        return mPrefs.getInt(PreferencesKeys.FILE_PICKER_SORT_BY, DialogConfigs.SORT_BY_NAME);
-    }
-
-    public void setFilePickerSortBy(int sortBy) {
-        mPrefs.edit().putInt(PreferencesKeys.FILE_PICKER_SORT_BY, sortBy).apply();
-    }
-
-    public int getFilePickerSortOrder() {
-        return mPrefs.getInt(PreferencesKeys.FILE_PICKER_SORT_ORDER, DialogConfigs.SORT_ORDER_NORMAL);
-    }
-
-    public void setFilePickerSortOrder(int sortOrder) {
-        mPrefs.edit().putInt(PreferencesKeys.FILE_PICKER_SORT_ORDER, sortOrder).apply();
     }
 
     public boolean shouldSignApks() {
@@ -113,14 +79,6 @@ public class PreferencesHelper {
 
     public boolean shouldShowAppFeatures() {
         return mPrefs.getBoolean(PreferencesKeys.SHOW_APP_FEATURES, true);
-    }
-
-    public boolean shouldShowSafTip() {
-        return !mPrefs.getBoolean(PreferencesKeys.SAF_TIP_SHOWN, false);
-    }
-
-    public void setSafTipShown() {
-        mPrefs.edit().putBoolean(PreferencesKeys.SAF_TIP_SHOWN, true).apply();
     }
 
     public boolean isInstallerXEnabled() {

@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,30 +25,22 @@ import com.aefyr.sai.ui.dialogs.AppInstalledDialogFragment;
 import com.aefyr.sai.ui.dialogs.DarkLightThemeSelectionDialogFragment;
 import com.aefyr.sai.ui.dialogs.DonationSuggestionDialogFragment;
 import com.aefyr.sai.ui.dialogs.ErrorLogDialogFragment2;
-import com.aefyr.sai.ui.dialogs.FilePickerDialogFragment;
 import com.aefyr.sai.ui.dialogs.InstallationConfirmationDialogFragment;
 import com.aefyr.sai.ui.dialogs.InstallerXDialogFragment;
 import com.aefyr.sai.ui.dialogs.ThemeSelectionDialogFragment;
 import com.aefyr.sai.ui.recycler.RecyclerPaddingDecoration;
 import com.aefyr.sai.utils.AlertsUtils;
-import com.aefyr.sai.utils.PermissionsUtils;
 import com.aefyr.sai.utils.PreferencesHelper;
 import com.aefyr.sai.utils.Theme;
 import com.aefyr.sai.utils.Utils;
 import com.aefyr.sai.utils.saf.SafUtils;
 import com.aefyr.sai.viewmodels.InstallerViewModel;
-import com.github.angads25.filepicker.model.DialogConfigs;
-import com.github.angads25.filepicker.model.DialogProperties;
-import com.tomergoldst.tooltips.ToolTip;
-import com.tomergoldst.tooltips.ToolTipsManager;
-
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class Installer2Fragment extends InstallerFragment implements FilePickerDialogFragment.OnFilesSelectedListener, InstallationConfirmationDialogFragment.ConfirmationListener, SaiPiSessionsAdapter.ActionDelegate {
+public class Installer2Fragment extends InstallerFragment implements InstallationConfirmationDialogFragment.ConfirmationListener, SaiPiSessionsAdapter.ActionDelegate {
     private static final String TAG = "Installer2Fragment";
 
     private static final int REQUEST_CODE_GET_FILES = 337;
@@ -62,8 +53,6 @@ public class Installer2Fragment extends InstallerFragment implements FilePickerD
     private PreferencesHelper mHelper;
 
     private Uri mPendingActionViewUri;
-
-    private ToolTipsManager mToolTipsManager;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -129,49 +118,12 @@ public class Installer2Fragment extends InstallerFragment implements FilePickerD
         findViewById(R.id.ib_help).setOnClickListener((v) -> AlertsUtils.showAlert(this, R.string.help, R.string.installer_help));
 
         Button installButtton = findViewById(R.id.button_install);
-        installButtton.setOnClickListener((v) -> {
-            if (mHelper.isInstallerXEnabled())
-                openInstallerXDialog(null);
-            else
-                checkPermissionsAndPickFiles();
-        });
-        installButtton.setOnLongClickListener((v) -> {
-            if (mHelper.isInstallerXEnabled())
-                openInstallerXDialog(null);
-            else
-                pickFilesWithSaf();
-
-            return true;
-        });
-
-        if (mHelper.shouldShowSafTip()) {
-            mToolTipsManager = new ToolTipsManager((view1, anchorViewId, byUser) -> {
-                if (byUser)
-                    mHelper.setSafTipShown();
-            });
-
-            ToolTip tooltip = new ToolTip.Builder(requireContext(), installButtton, ((ViewGroup) view), getText(R.string.installer_saf_tip), ToolTip.POSITION_ABOVE)
-                    .setBackgroundColor(Utils.getThemeColor(requireContext(), androidx.appcompat.R.attr.colorAccent))
-                    .setTextAppearance(R.style.SAITooltipTextAppearance)
-                    .setGravity(ToolTip.GRAVITY_CENTER)
-                    .build();
-
-            installButtton.post(() -> mToolTipsManager.show(tooltip));
-        }
+        installButtton.setOnClickListener((v) -> pickFilesWithSaf());
 
         if (mPendingActionViewUri != null) {
             handleActionView(mPendingActionViewUri);
             mPendingActionViewUri = null;
         }
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-
-        if (mToolTipsManager != null)
-            mToolTipsManager.dismissAll();
-
     }
 
     @Override
@@ -204,27 +156,15 @@ public class Installer2Fragment extends InstallerFragment implements FilePickerD
     }
 
     private void openInstallerXDialog(@Nullable Uri apkSourceUri) {
+        openInstallerXDialog(apkSourceUri == null ? Collections.emptyList() : Collections.singletonList(apkSourceUri));
+    }
+
+    private void openInstallerXDialog(List<Uri> apkSourceUris) {
         DialogFragment existingDialog = (DialogFragment) getChildFragmentManager().findFragmentByTag("installerx_dialog");
         if (existingDialog != null)
             existingDialog.dismiss();
 
-        InstallerXDialogFragment.newInstance(apkSourceUri, null).show(getChildFragmentManager(), "installerx_dialog");
-    }
-
-    private void checkPermissionsAndPickFiles() {
-        if (!PermissionsUtils.checkAndRequestStoragePermissions(this))
-            return;
-
-        DialogProperties properties = new DialogProperties();
-        properties.selection_mode = DialogConfigs.MULTI_MODE;
-        properties.selection_type = DialogConfigs.FILE_SELECT;
-        properties.root = Environment.getExternalStorageDirectory();
-        properties.offset = new File(mHelper.getHomeDirectory());
-        properties.extensions = new String[]{"apk", "zip", "apks", "xapk", "apkm"};
-        properties.sortBy = mHelper.getFilePickerSortBy();
-        properties.sortOrder = mHelper.getFilePickerSortOrder();
-
-        FilePickerDialogFragment.newInstance(null, getString(R.string.installer_pick_apks), properties).show(getChildFragmentManager(), "dialog_files_picker");
+        InstallerXDialogFragment.newInstance(apkSourceUris, null).show(getChildFragmentManager(), "installerx_dialog");
     }
 
     private boolean pickFilesWithSaf() {
@@ -237,19 +177,6 @@ public class Installer2Fragment extends InstallerFragment implements FilePickerD
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == PermissionsUtils.REQUEST_CODE_STORAGE_PERMISSIONS) {
-            if (grantResults.length == 0 || grantResults[0] == PackageManager.PERMISSION_DENIED)
-                AlertsUtils.showAlert(this, R.string.error, R.string.permissions_required_storage);
-            else
-                checkPermissionsAndPickFiles();
-        }
-
-    }
-
-    @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
@@ -257,19 +184,25 @@ public class Installer2Fragment extends InstallerFragment implements FilePickerD
             if (resultCode != Activity.RESULT_OK || data == null)
                 return;
 
-            //TODO support multiple .apks files here
+            List<Uri> apkUris = new ArrayList<>();
             if (data.getData() != null) {
-                mViewModel.installPackagesFromContentProviderZip(data.getData());
-                return;
-            }
-
-            if (data.getClipData() != null) {
+                apkUris.add(data.getData());
+            } else if (data.getClipData() != null) {
                 ClipData clipData = data.getClipData();
-                List<Uri> apkUris = new ArrayList<>(clipData.getItemCount());
+                apkUris = new ArrayList<>(clipData.getItemCount());
 
                 for (int i = 0; i < clipData.getItemCount(); i++)
                     apkUris.add(clipData.getItemAt(i).getUri());
+            }
 
+            if (apkUris.isEmpty())
+                return;
+
+            if (mHelper.isInstallerXEnabled()) {
+                openInstallerXDialog(apkUris);
+            } else if (apkUris.size() == 1) {
+                mViewModel.installPackagesFromContentProviderZip(apkUris.get(0));
+            } else {
                 mViewModel.installPackagesFromContentProviderUris(apkUris);
             }
         }
@@ -277,37 +210,6 @@ public class Installer2Fragment extends InstallerFragment implements FilePickerD
 
     private void showPackageInstalledAlert(String packageName) {
         AppInstalledDialogFragment.newInstance(packageName).show(getChildFragmentManager(), "dialog_app_installed");
-    }
-
-    @Override
-    public void onFilesSelected(String tag, List<File> files) {
-        if (files.size() == 0 || !ensureExtensionsConsistency(files)) {
-            AlertsUtils.showAlert(this, R.string.error, R.string.installer_error_installer2_mixed_extensions_internal);
-            return;
-        }
-
-        String extension = Utils.getExtension(files.get(0).getName());
-
-        if ("apks".equals(extension) || "zip".equals(extension) || "xapk".equals(extension) || "apkm".equals(extension)) {
-            mViewModel.installPackagesFromZip(files);
-        } else if ("apk".equals(extension)) {
-            mViewModel.installPackages(files);
-        } else {
-            AlertsUtils.showAlert(this, R.string.error, R.string.installer_error_installer2_mixed_extensions_internal);
-        }
-    }
-
-    private boolean ensureExtensionsConsistency(List<File> files) {
-        String firstFileExtension = Utils.getExtension(files.get(0).getName());
-        if (firstFileExtension == null)
-            return false;
-
-        for (int i = 1; i < files.size(); i++) {
-            if (!files.get(i).getName().endsWith(firstFileExtension))
-                return false;
-        }
-
-        return true;
     }
 
     @Override

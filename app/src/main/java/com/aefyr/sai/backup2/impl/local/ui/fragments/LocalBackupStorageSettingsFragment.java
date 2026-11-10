@@ -1,5 +1,7 @@
 package com.aefyr.sai.backup2.impl.local.ui.fragments;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -15,12 +17,12 @@ import com.aefyr.sai.backup2.impl.local.LocalBackupStorageProvider;
 import com.aefyr.sai.backup2.impl.local.prefs.LocalBackupStoragePrefConstants;
 import com.aefyr.sai.model.common.PackageMeta;
 import com.aefyr.sai.ui.dialogs.NameFormatBuilderDialogFragment;
-import com.aefyr.sai.ui.dialogs.UriDirectoryPickerDialogFragment;
 import com.aefyr.sai.utils.BackupNameFormat;
 
 import java.util.Objects;
 
-public class LocalBackupStorageSettingsFragment extends PreferenceFragmentCompat implements UriDirectoryPickerDialogFragment.OnDirectoryPickedListener, NameFormatBuilderDialogFragment.OnFormatBuiltListener {
+public class LocalBackupStorageSettingsFragment extends PreferenceFragmentCompat implements NameFormatBuilderDialogFragment.OnFormatBuiltListener {
+    private static final int REQUEST_CODE_SELECT_BACKUP_DIR = 1334;
 
     private Preference mBackupNameFormatPref;
     private Preference mBackupDirPref;
@@ -60,7 +62,7 @@ public class LocalBackupStorageSettingsFragment extends PreferenceFragmentCompat
         mBackupDirPref = findPreference(LocalBackupStoragePrefConstants.KEY_BACKUP_DIR_URI);
         updateBackupDirSummary();
         mBackupDirPref.setOnPreferenceClickListener(p -> {
-            UriDirectoryPickerDialogFragment.newInstance(requireContext()).show(getChildFragmentManager(), "backup_dir");
+            selectBackupDir();
             return true;
         });
     }
@@ -73,17 +75,22 @@ public class LocalBackupStorageSettingsFragment extends PreferenceFragmentCompat
         mBackupDirPref.setSummary(getString(R.string.settings_main_backup_backup_dir_summary, mProvider.getBackupDirUri()));
     }
 
+    private void selectBackupDir() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        startActivityForResult(Intent.createChooser(intent, getString(R.string.settings_main_pick_dir)), REQUEST_CODE_SELECT_BACKUP_DIR);
+    }
+
     @Override
-    public void onDirectoryPicked(@Nullable String tag, Uri dirUri) {
-        if (tag == null)
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode != REQUEST_CODE_SELECT_BACKUP_DIR || resultCode != Activity.RESULT_OK || data == null || data.getData() == null)
             return;
 
-        switch (tag) {
-            case "backup_dir":
-                mProvider.setBackupDirUri(dirUri);
-                updateBackupDirSummary();
-                break;
-        }
+        Uri backupDirUri = data.getData();
+        requireContext().getContentResolver().takePersistableUriPermission(backupDirUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        mProvider.setBackupDirUri(backupDirUri);
+        updateBackupDirSummary();
     }
 
     @Override

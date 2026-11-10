@@ -13,9 +13,6 @@
     <string name="dont_show_again">Don\'t show again</string>
     <string name="warning">Warning</string>
 
-    <string name="filepicker_internal">Internal file picker</string>
-    <string name="filepicker_saf">System file picker</string>
-
     <string name="permissions_required_storage">SAI requires permission to access storage</string>
     <string name="permissions_required_shizuku">SAI requires permission to use Shizuku Server</string>
 
@@ -49,7 +46,6 @@
     <string name="installer_error_while_extracting">Error while extracting APK files from ZIP: %s</string>
     <string name="installer_error_zip_contains_no_apks">ZIP doesn\'t contain any apk files</string>
     <string name="installer_error_mixed_extensions">You must select either a single .zip/.apks file or multiple .apk files</string>
-    <string name="installer_error_installer2_mixed_extensions_internal">You have to select one or more .apk/.apks/.zip files, no mixed extensions allowed</string>
     <string name="installer_error_installer2_mixed_extensions_saf">You have to select either a single .zip/.apks file or multiple .apk files</string>
     <string name="installer_error_unknown_apk_size">Unable to get APK size from the archive, please enable \"Extract APKs from archives\" setting and try again</string>
     <string name="installer_select_theme">Select theme</string>
@@ -67,7 +63,6 @@
     <string name="installer_unable_to_launch_app">Unable to launch app</string>
     <string name="installer_show_full_error">Show full error</string>
     <string name="installer_placeholder_text">No installer sessions</string>
-    <string name="installer_saf_tip">Long click to use system file picker.\n(Click this tooltip to hide it forever)</string>
     <string name="installer_recoverable_error_use_zipfile">Archive can\'t be read the normal way. Please enable \"Use ZipFile API\" toggle in settings and try again.</string>
     <string name="installer_rootless_error2_unknown">Unknown error</string>
     <string name="installer_rootless_error2_install_failed_already_exists">This package is already installed</string>
@@ -192,10 +187,6 @@
     <string name="backup_export_apk_desc">Export a single selected part as a .apk file. Exported .apk files are not backups and won\'t be managed by SAI</string>
 
     <string name="settings_title">Settings</string>
-    <string name="settings_main_home_directory">Home directory</string>
-    <string name="settings_main_home_directory_summary">Starting directory in APKs picker\nCurrently: %s</string>
-    <string name="settings_main_file_picker_sort">Files sorting</string>
-    <string name="settings_main_file_picker_sort_summary">When selecting APKs\nCurrently: %s</string>
     <string name="settings_main_pick_dir">Pick Directory</string>
     <string name="settings_main_about">About</string>
     <string name="settings_main_use_root">Use root</string>
@@ -284,7 +275,6 @@
     <string name="donate_dialog_title">Donation</string>
 
     <string name="installerx_dialog_title">Customize installation</string>
-    <string name="installerx_dialog_choose_filepicker">How do you want to select files to install?</string>
     <string name="installerx_dialog_loading">Parsing APKs…</string>
     <string name="installerx_dialog_install">Install</string>
     <string name="installerx_dialog_error">SAI has encountered an unexpected error while trying to parse selected file(s)</string>

@@ -1,15 +1,8 @@
 package com.aefyr.sai.ui.dialogs;
 
-import android.Manifest;
-import android.app.Activity;
-import android.content.ClipData;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,50 +18,29 @@ import com.aefyr.sai.R;
 import com.aefyr.sai.adapters.SplitApkSourceMetaAdapter;
 import com.aefyr.sai.installerx.resolver.urimess.UriHostFactory;
 import com.aefyr.sai.ui.dialogs.base.BaseBottomSheetDialogFragment;
-import com.aefyr.sai.utils.AlertsUtils;
-import com.aefyr.sai.utils.PermissionsUtils;
-import com.aefyr.sai.utils.PreferencesHelper;
-import com.aefyr.sai.utils.Utils;
 import com.aefyr.sai.view.ViewSwitcherLayout;
 import com.aefyr.sai.viewmodels.InstallerXDialogViewModel;
 import com.aefyr.sai.viewmodels.factory.InstallerXDialogViewModelFactory;
-import com.github.angads25.filepicker.model.DialogConfigs;
-import com.github.angads25.filepicker.model.DialogProperties;
-
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class InstallerXDialogFragment extends BaseBottomSheetDialogFragment implements FilePickerDialogFragment.OnFilesSelectedListener, SimpleAlertDialogFragment.OnDismissListener {
-    private static final int REQUEST_CODE_GET_FILES = 337;
-
-    private static final String ARG_APK_SOURCE_URI = "apk_source_uri";
+public class InstallerXDialogFragment extends BaseBottomSheetDialogFragment {
+    private static final String ARG_APK_SOURCE_URIS = "apk_source_uris";
     private static final String ARG_URI_HOST_FACTORY = "uri_host_factory";
 
     private InstallerXDialogViewModel mViewModel;
 
-    private PreferencesHelper mHelper;
-
-    private int mActionAfterGettingStoragePermissions;
-    private static final int PICK_WITH_INTERNAL_FILEPICKER = 0;
-    private static final int PICK_WITH_SAF = 1;
-
-    private static final String DIALOG_TAG_Q_SAF_WARNING = "q_saf_warning";
-
     /**
      * Create an instance of InstallerXDialogFragment with given apk source uri and UriHostFactory class.
-     * If {@code apkSourceUri} is null, dialog will let user pick apk source file.
      * If {@code uriHostFactoryClass} is null, {@link com.aefyr.sai.installerx.resolver.urimess.impl.AndroidUriHost} will be used.
      *
      * @param apkSourceUri
      * @param uriHostFactoryClass
      * @return
      */
-    public static InstallerXDialogFragment newInstance(@Nullable Uri apkSourceUri, @Nullable Class<? extends UriHostFactory> uriHostFactoryClass) {
+    public static InstallerXDialogFragment newInstance(List<Uri> apkSourceUris, @Nullable Class<? extends UriHostFactory> uriHostFactoryClass) {
         Bundle args = new Bundle();
-        if (apkSourceUri != null)
-            args.putParcelable(ARG_APK_SOURCE_URI, apkSourceUri);
+        args.putParcelableArrayList(ARG_APK_SOURCE_URIS, new ArrayList<>(apkSourceUris));
 
         if (uriHostFactoryClass != null)
             args.putString(ARG_URI_HOST_FACTORY, uriHostFactoryClass.getCanonicalName());
@@ -96,15 +68,14 @@ public class InstallerXDialogFragment extends BaseBottomSheetDialogFragment impl
             }
         }
 
-        mHelper = PreferencesHelper.getInstance(requireContext());
         mViewModel = new ViewModelProvider(this, new InstallerXDialogViewModelFactory(requireContext(), uriHostFactory)).get(InstallerXDialogViewModel.class);
 
         if (args == null)
             return;
 
-        Uri apkSourceUri = args.getParcelable(ARG_APK_SOURCE_URI);
-        if (apkSourceUri != null)
-            mViewModel.setApkSourceUris(Collections.singletonList(apkSourceUri));
+        ArrayList<Uri> apkSourceUris = args.getParcelableArrayList(ARG_APK_SOURCE_URIS);
+        if (apkSourceUris != null && !apkSourceUris.isEmpty())
+            mViewModel.setApkSourceUris(apkSourceUris);
     }
 
     @Nullable
@@ -135,14 +106,10 @@ public class InstallerXDialogFragment extends BaseBottomSheetDialogFragment impl
             dismiss();
         });
 
-        view.findViewById(R.id.button_installerx_fp_internal).setOnClickListener(v -> checkPermissionsAndPickFiles());
-        view.findViewById(R.id.button_installerx_fp_saf).setOnClickListener(v -> pickFilesWithSaf(false));
-
         TextView warningTv = view.findViewById(R.id.tv_installerx_warning);
         mViewModel.getState().observe(this, state -> {
             switch (state) {
                 case NO_DATA:
-                    viewSwitcher.setShownView(R.id.container_installerx_no_data);
                     getPositiveButton().setVisibility(View.GONE);
                     break;
                 case LOADING:
@@ -182,106 +149,4 @@ public class InstallerXDialogFragment extends BaseBottomSheetDialogFragment impl
             mViewModel.cancelParsing();
     }
 
-    private void checkPermissionsAndPickFiles() {
-        if (!PermissionsUtils.checkAndRequestStoragePermissions(this)) {
-            mActionAfterGettingStoragePermissions = PICK_WITH_INTERNAL_FILEPICKER;
-            return;
-        }
-
-
-        DialogProperties properties = new DialogProperties();
-        properties.selection_mode = DialogConfigs.MULTI_MODE;
-        properties.selection_type = DialogConfigs.FILE_SELECT;
-        properties.root = Environment.getExternalStorageDirectory();
-        properties.offset = new File(mHelper.getHomeDirectory());
-        properties.extensions = new String[]{"zip", "apks", "xapk", "apk", "apkm"};
-        properties.sortBy = mHelper.getFilePickerSortBy();
-        properties.sortOrder = mHelper.getFilePickerSortOrder();
-
-        FilePickerDialogFragment.newInstance(null, getString(R.string.installer_pick_apks), properties).show(getChildFragmentManager(), "dialog_files_picker");
-    }
-
-    private void pickFilesWithSaf(boolean ignorePermissions) {
-        if (Utils.apiIsAtLeast(30) && !ignorePermissions) {
-            boolean hasStorageAccess = Utils.apiIsAtLeast(Build.VERSION_CODES.R)
-                    ? Environment.isExternalStorageManager()
-                    : requireContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-            if (!hasStorageAccess) {
-                SimpleAlertDialogFragment.newInstance(requireContext(), R.string.warning, R.string.installerx_thank_you_scoped_storage_very_cool).show(getChildFragmentManager(), DIALOG_TAG_Q_SAF_WARNING);
-                return;
-            }
-        }
-
-        Intent getContentIntent = new Intent(Intent.ACTION_GET_CONTENT);
-        getContentIntent.setType("*/*");
-        getContentIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        getContentIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
-        getContentIntent.addCategory(Intent.CATEGORY_OPENABLE);
-        startActivityForResult(Intent.createChooser(getContentIntent, getString(R.string.installer_pick_apks)), REQUEST_CODE_GET_FILES);
-
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == PermissionsUtils.REQUEST_CODE_STORAGE_PERMISSIONS) {
-            boolean permissionsGranted = !(grantResults.length == 0 || grantResults[0] == PackageManager.PERMISSION_DENIED);
-
-            switch (mActionAfterGettingStoragePermissions) {
-                case PICK_WITH_INTERNAL_FILEPICKER:
-                    if (!permissionsGranted)
-                        AlertsUtils.showAlert(this, R.string.error, R.string.permissions_required_storage);
-                    else
-                        checkPermissionsAndPickFiles();
-                    break;
-                case PICK_WITH_SAF:
-                    pickFilesWithSaf(true);
-                    break;
-            }
-        }
-
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == REQUEST_CODE_GET_FILES) {
-            if (resultCode != Activity.RESULT_OK || data == null)
-                return;
-
-            if (data.getData() != null) {
-                mViewModel.setApkSourceUris(Collections.singletonList(data.getData()));
-                return;
-            }
-
-            if (data.getClipData() != null) {
-                ClipData clipData = data.getClipData();
-                List<Uri> apkUris = new ArrayList<>(clipData.getItemCount());
-
-                for (int i = 0; i < clipData.getItemCount(); i++)
-                    apkUris.add(clipData.getItemAt(i).getUri());
-
-                mViewModel.setApkSourceUris(apkUris);
-            }
-        }
-    }
-
-    @Override
-    public void onFilesSelected(String tag, List<File> files) {
-        mViewModel.setApkSourceFiles(files);
-    }
-
-    @Override
-    public void onDialogDismissed(@NonNull String dialogTag) {
-        switch (dialogTag) {
-            case DIALOG_TAG_Q_SAF_WARNING:
-                mActionAfterGettingStoragePermissions = PICK_WITH_SAF;
-                if (PermissionsUtils.checkAndRequestStoragePermissions(this)) {
-                    pickFilesWithSaf(false);
-                }
-                break;
-        }
-    }
 }

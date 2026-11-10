@@ -30,6 +30,7 @@ import com.aefyr.sai.ui.dialogs.InstallerXDialogFragment;
 import com.aefyr.sai.ui.dialogs.ThemeSelectionDialogFragment;
 import com.aefyr.sai.ui.recycler.RecyclerPaddingDecoration;
 import com.aefyr.sai.utils.AlertsUtils;
+import com.aefyr.sai.utils.PermissionsUtils;
 import com.aefyr.sai.utils.PreferencesHelper;
 import com.aefyr.sai.utils.Theme;
 import com.aefyr.sai.utils.Utils;
@@ -118,7 +119,7 @@ public class Installer2Fragment extends InstallerFragment implements Installatio
         findViewById(R.id.ib_help).setOnClickListener((v) -> AlertsUtils.showAlert(this, R.string.help, R.string.installer_help));
 
         Button installButtton = findViewById(R.id.button_install);
-        installButtton.setOnClickListener((v) -> pickFilesWithSaf());
+        installButtton.setOnClickListener((v) -> checkPermissionsAndPickFiles());
 
         if (mPendingActionViewUri != null) {
             handleActionView(mPendingActionViewUri);
@@ -171,9 +172,35 @@ public class Installer2Fragment extends InstallerFragment implements Installatio
         Intent getContentIntent = new Intent(Intent.ACTION_GET_CONTENT);
         getContentIntent.setType("*/*");
         getContentIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        getContentIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+        getContentIntent.addCategory(Intent.CATEGORY_OPENABLE);
         startActivityForResult(Intent.createChooser(getContentIntent, getString(R.string.installer_pick_apks)), REQUEST_CODE_GET_FILES);
 
         return true;
+    }
+
+    /**
+     * InstallerX opens archive sources as files through /proc/self/fd.  A URI grant from the
+     * system picker alone is not enough for that path on scoped-storage devices, so without
+     * storage access AndroidUriHost has to copy the source into the cache directory.
+     */
+    private void checkPermissionsAndPickFiles() {
+        if (PermissionsUtils.checkAndRequestStoragePermissions(this))
+            pickFilesWithSaf();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode != PermissionsUtils.REQUEST_CODE_STORAGE_PERMISSIONS)
+            return;
+
+        if (grantResults.length == 0 || grantResults[0] == PackageManager.PERMISSION_DENIED) {
+            AlertsUtils.showAlert(this, R.string.error, R.string.permissions_required_storage);
+        } else {
+            pickFilesWithSaf();
+        }
     }
 
     @Override

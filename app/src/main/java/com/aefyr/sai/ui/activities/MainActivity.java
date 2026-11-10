@@ -104,16 +104,13 @@ public class MainActivity extends ThemedActivity implements BottomNavigationView
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_installer:
+        int itemId = item.getItemId();
+        if (itemId == R.id.menu_installer) {
                 mFragmentNavigator.switchTo("installer");
-                break;
-            case R.id.menu_backup:
-                mFragmentNavigator.switchTo("backup");
-                break;
-            case R.id.menu_settings:
-                mFragmentNavigator.switchTo("settings");
-                break;
+        } else if (itemId == R.id.menu_backup) {
+            mFragmentNavigator.switchTo("backup");
+        } else if (itemId == R.id.menu_settings) {
+            mFragmentNavigator.switchTo("settings");
         }
 
         return true;

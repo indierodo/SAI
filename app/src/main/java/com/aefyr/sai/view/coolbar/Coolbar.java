@@ -54,7 +54,7 @@ public class Coolbar extends ViewGroup {
     private void parseAttrs(AttributeSet attrs) {
         TypedArray a = getResources().obtainAttributes(attrs, R.styleable.Coolbar);
         mTitleText = a.getString(R.styleable.Coolbar_title);
-        mTitleColor = a.getColor(R.styleable.Coolbar_titleColor, getThemeColor(R.attr.titleTextColor, DEFAULT_TITLE_COLOR));
+        mTitleColor = a.getColor(R.styleable.Coolbar_titleColor, getThemeColor(androidx.appcompat.R.attr.titleTextColor, DEFAULT_TITLE_COLOR));
         a.recycle();
     }
 
@@ -72,7 +72,7 @@ public class Coolbar extends ViewGroup {
         addView(mTitle);
 
         if (getBackground() == null)
-            setBackgroundColor(getThemeColor(R.attr.colorPrimary, Color.WHITE));
+            setBackgroundColor(getThemeColor(androidx.appcompat.R.attr.colorPrimary, Color.WHITE));
     }
 
     @Override

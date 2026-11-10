@@ -151,7 +151,7 @@ public class Installer2Fragment extends InstallerFragment implements FilePickerD
             });
 
             ToolTip tooltip = new ToolTip.Builder(requireContext(), installButtton, ((ViewGroup) view), getText(R.string.installer_saf_tip), ToolTip.POSITION_ABOVE)
-                    .setBackgroundColor(Utils.getThemeColor(requireContext(), R.attr.colorAccent))
+                    .setBackgroundColor(Utils.getThemeColor(requireContext(), androidx.appcompat.R.attr.colorAccent))
                     .setTextAppearance(R.style.SAITooltipTextAppearance)
                     .setGravity(ToolTip.GRAVITY_CENTER)
                     .build();

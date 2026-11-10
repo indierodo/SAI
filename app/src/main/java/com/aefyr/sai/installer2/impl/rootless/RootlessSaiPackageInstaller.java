@@ -98,7 +98,9 @@ public class RootlessSaiPackageInstaller extends BaseSaiPackageInstaller impleme
             }
 
             Intent callbackIntent = new Intent(RootlessSaiPiBroadcastReceiver.ACTION_DELIVER_PI_EVENT);
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(getContext(), 0, callbackIntent, 0);
+            // PackageInstaller fills this callback with the session status and, when needed,
+            // the system confirmation intent. It therefore must remain mutable.
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(getContext(), 0, callbackIntent, PendingIntent.FLAG_MUTABLE);
             session.commit(pendingIntent.getIntentSender());
         } catch (Exception e) {
             Log.w(TAG, e);

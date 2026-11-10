@@ -19,11 +19,15 @@ import com.aefyr.sai.ui.fragments.Installer2Fragment;
 import com.aefyr.sai.ui.fragments.InstallerFragment;
 import com.aefyr.sai.ui.fragments.LegacyInstallerFragment;
 import com.aefyr.sai.ui.fragments.PreferencesFragment;
+import com.aefyr.sai.ui.dialogs.InstallerXDialogFragment;
 import com.aefyr.sai.utils.FragmentNavigator;
 import com.aefyr.sai.utils.MiuiUtils;
 import com.aefyr.sai.utils.PreferencesHelper;
 import com.aefyr.sai.utils.PreferencesKeys;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends ThemedActivity implements BottomNavigationView.OnNavigationItemSelectedListener, FragmentNavigator.FragmentFactory {
 
@@ -58,19 +62,35 @@ public class MainActivity extends ThemedActivity implements BottomNavigationView
         if (savedInstanceState == null)
             mFragmentNavigator.switchTo("installer");
 
-        Intent intent = getIntent();
-        if (Intent.ACTION_VIEW.equals(intent.getAction()) && intent.getData() != null) {
-            deliverActionViewUri(intent.getData());
-            getIntent().setData(null);
-        }
+        handleIncomingIntent(getIntent());
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        setIntent(intent);
+        handleIncomingIntent(intent);
+    }
+
+    private void handleIncomingIntent(Intent intent) {
         if (Intent.ACTION_VIEW.equals(intent.getAction()) && intent.getData() != null) {
             deliverActionViewUri(intent.getData());
+            return;
         }
+
+        List<Uri> sharedUris = new ArrayList<>();
+        if (Intent.ACTION_SEND.equals(intent.getAction())) {
+            Uri uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+            if (uri != null)
+                sharedUris.add(uri);
+        } else if (Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction())) {
+            ArrayList<Uri> uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+            if (uris != null)
+                sharedUris.addAll(uris);
+        }
+
+        if (!sharedUris.isEmpty())
+            deliverSharedUris(sharedUris);
     }
 
     private void deliverActionViewUri(Uri uri) {
@@ -81,6 +101,16 @@ public class MainActivity extends ThemedActivity implements BottomNavigationView
         mBottomNavigationView.getMenu().getItem(0).setChecked(true);
         mFragmentNavigator.switchTo("installer");
         getInstallerFragment().handleActionView(uri);
+    }
+
+    private void deliverSharedUris(List<Uri> uris) {
+        if (!mIsNavigationEnabled) {
+            Toast.makeText(this, R.string.main_navigation_disabled, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        mBottomNavigationView.getMenu().getItem(0).setChecked(true);
+        mFragmentNavigator.switchTo("installer");
+        InstallerXDialogFragment.newInstance(uris, null).show(getSupportFragmentManager(), "shared_files_installerx_dialog");
     }
 
     private void showMiuiWarning() {
